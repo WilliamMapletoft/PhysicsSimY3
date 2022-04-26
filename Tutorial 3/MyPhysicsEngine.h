@@ -185,8 +185,12 @@ namespace PhysicsEngine
 	class MyScene : public Scene
 	{
 		Plane* plane;
-		Box* box, * box2;
+		Hammer* hammer;
+		Box* box, box2;
+		SBox* staticBox;
 		MySimulationEventCallback* my_callback;
+		PxMaterial* dominoMat;
+		RevoluteJoint* hamJoint;
 		
 	public:
 		//specify your custom filter shader here
@@ -208,6 +212,9 @@ namespace PhysicsEngine
 			GetMaterial()->setDynamicFriction(.2f);
 
 			///Initialise and set the customised event callback
+
+			dominoMat = CreateMaterial(0.2f, 0.2f, 0.6f);
+
 			my_callback = new MySimulationEventCallback();
 			px_scene->setSimulationEventCallback(my_callback);
 
@@ -217,12 +224,29 @@ namespace PhysicsEngine
 
 			box = new Box(PxTransform(PxVec3(.0f,.5f,.0f)));
 			box->Color(color_palette[0]);
+
+			hammer = new Hammer(PxTransform(PxVec3(5.f, 1.5f, 1.5f)), 1.f, 2.f);
+			hammer->Color(PxVec3(0.f, 0.f, 0.f));
+			PxRigidDynamic* px_actor = (PxRigidDynamic*)hammer->Get();
+			px_actor->setAngularDamping(10.0f);
+			px_actor->setSleepThreshold(0.f);
+			
+			hamJoint = new RevoluteJoint(NULL,
+				PxTransform(PxVec3(5.f, 1.423f, 1.5f), PxQuat(PxPi * 2, PxVec3(1.f, 0.f, 0.f))),
+				hammer, 
+				PxTransform(PxVec3(0.0f, 1.15f, 0.f)));
+			hamJoint->DriveVelocity(-1.f);
+
+			Add(hammer);
+
+
 			//set collision filter flags
 			// box->SetupFiltering(FilterGroup::ACTOR0, FilterGroup::ACTOR1);
 			//use | operator to combine more actors e.g.
 			// box->SetupFiltering(FilterGroup::ACTOR0, FilterGroup::ACTOR1 | FilterGroup::ACTOR2);
 			//don't forget to set your flags for the matching actor as well, e.g.:
 			// box2->SetupFiltering(FilterGroup::ACTOR1, FilterGroup::ACTOR0);
+
 			box->Name("Box1");
 			Add(box);
 
@@ -233,21 +257,32 @@ namespace PhysicsEngine
 			RevoluteJoint joint(box, PxTransform(PxVec3(0.f,0.f,0.f),PxQuat(PxPi/2,PxVec3(0.f,1.f,0.f))), box2, PxTransform(PxVec3(0.f,5.f,0.f)));
 			*/
 
-			PxTransform startLoc = PxTransform(PxVec3(5.f, 1.f, 2.f), PxQuat(PxPi * 2, PxVec3(0.f, 1.f, 0.f)));
+			PxTransform startLoc = PxTransform(PxVec3(5.f, 0.f, 2.f), PxQuat(PxPi * 2, PxVec3(0.f, 1.f, 0.f)));
 
 			//PxTransform temp = startLoc;
 
-			startLoc = spawnLine(startLoc, 50);
-			startLoc = spawnCorner(startLoc, 150, 90 * (PxPi / 180));
-			startLoc = spawnLine(startLoc, 25);
-			startLoc = spawnCorner(startLoc, 75, -90 * (PxPi / 180));
-			startLoc = spawnLine(startLoc, 12);
-			startLoc = spawnCorner(startLoc, 32, 90 * (PxPi / 180));
-			startLoc = spawnLine(startLoc, 6);
-			startLoc = spawnCorner(startLoc, 16, -90 * (PxPi / 180));
-			startLoc = spawnLine(startLoc, 3);
-			startLoc = spawnCorner(startLoc, 8, 90 * (PxPi / 180));
-			startLoc = spawnLine(startLoc, 1);
+			startLoc = spawnStairs(startLoc, 10);
+			startLoc = spawnLine(startLoc, 15);
+			startLoc = spawnCorner(startLoc, 25, PxPiDivTwo);
+			startLoc = spawnLine(startLoc, 15);
+			startLoc = spawnCorner(startLoc, 25, -PxPiDivTwo);
+			startLoc = spawnStairs(startLoc, 10);
+			startLoc = spawnCorner(startLoc, 15, PxPiDivTwo);
+			startLoc = spawnStairs(startLoc, 12);
+			startLoc = spawnLine(startLoc, 2);
+			startLoc.p.y = 0.15f;
+			startLoc = spawnLine(startLoc, 15);
+
+			startLoc = spawnLine(startLoc, 15);
+			startLoc = spawnCorner(startLoc, 25, PxPiDivTwo);
+			startLoc = spawnLine(startLoc, 15);
+			startLoc = spawnCorner(startLoc, 25, -PxPiDivTwo);
+			startLoc = spawnStairs(startLoc, 10);
+			startLoc = spawnCorner(startLoc, 15, PxPiDivTwo);
+			startLoc = spawnStairs(startLoc, 12);
+			startLoc = spawnLine(startLoc, 2);
+			startLoc.p.y = 0.15f;
+			startLoc = spawnLine(startLoc, 15);
 		}
 
 		//Custom udpate function
@@ -256,34 +291,38 @@ namespace PhysicsEngine
 		}
 
 		/// An example use of key release handling
-		void ExampleKeyReleaseHandler()
+		void HammerRelease()
 		{
+			PxRevoluteJoint* temp = (PxRevoluteJoint*)hamJoint->Get();
+			temp->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_ENABLED, false);
 			cerr << "I am realeased!" << endl;
 		}
 
 		/// An example use of key presse handling
-		void ExampleKeyPressHandler()
+		void HammerPress()
 		{
+			PxRevoluteJoint* temp = (PxRevoluteJoint*)hamJoint->Get();
+			temp->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_ENABLED, true);
 			cerr << "I am pressed!" << endl;
 		}
 
 		PxTransform spawnLine(PxTransform startLocation, PxI16 noDominoes) // Spawns a straight line in the forward vector of the transform passed to the function
 		{
 			PxTransform temp = PxTransform(PxVec3(
-				startLocation.p.x - (startLocation.q.getBasisVector2().x * 0.0516f),
+				startLocation.p.x - (startLocation.q.getBasisVector2().x * 0.0616f),
 				startLocation.p.y,
-				startLocation.p.z - (startLocation.q.getBasisVector2().z * 0.0516f)
+				startLocation.p.z - (startLocation.q.getBasisVector2().z * 0.0616f)
 			));
 			for (int i = 0; i < noDominoes; i++) { // For loop to place x dominoes
 				box = new Box(PxTransform(PxVec3(
-					startLocation.p.x + (startLocation.q.getBasisVector2().x * 0.0516f * i),
+					startLocation.p.x + (startLocation.q.getBasisVector2().x * 0.0616f * i),
 					startLocation.p.y, 
-					startLocation.p.z + (startLocation.q.getBasisVector2().z * 0.0516f * i)
+					startLocation.p.z + (startLocation.q.getBasisVector2().z * 0.0616f * i)
 				)), PxVec3(0.0254f, 0.0508f, 0.009525f));
 
 				PxRigidDynamic* px_actor = (PxRigidDynamic*)box->Get();
 				px_actor->setGlobalPose(PxTransform(px_actor->getGlobalPose().p ,startLocation.q));
-
+				box->Material(dominoMat);
 				box->Color(PxVec3(1.f, 1.f, 1.f));
 				Add(box);
 			}
@@ -291,15 +330,86 @@ namespace PhysicsEngine
 			PxRigidDynamic* px_actor = (PxRigidDynamic*)box->Get();
 			PxVec3 position = px_actor->getGlobalPose().p;
 
-			position.x = position.x + (startLocation.q.getBasisVector2().x * 0.0516f);
-			position.z = position.z + (startLocation.q.getBasisVector2().z * 0.0516f);
+			position.x = position.x + (startLocation.q.getBasisVector2().x * 0.0616f);
+			position.z = position.z + (startLocation.q.getBasisVector2().z * 0.0616f);
+
+			if (temp.p.y > 0.1f) { spawnFloor(temp, px_actor->getGlobalPose(), 1.7f); }
 
 			startLocation.p = position;
 
-			if (temp.p.y > 0.1f) {	spawnFloor(temp, startLocation, 2.05f);	}
-
-			return PxTransform(startLocation);
+			return startLocation;
 		}
+
+		PxTransform spawnStairs(PxTransform startLocation, PxI16 noDominoes) {
+
+			for (int i = 0; i < noDominoes; i++) { // For loop to place x dominoes
+
+				PxTransform temp = PxTransform(PxVec3(
+					startLocation.p.x + (startLocation.q.getBasisVector2().x * 0.0616f * i),
+					startLocation.p.y + (startLocation.q.getBasisVector1().y * 0.0116f * i),
+					startLocation.p.z + (startLocation.q.getBasisVector2().z * 0.0616f * i)
+				), startLocation.q);
+
+				if ((temp.p.y) > 0.01f) {
+					spawnFloor(temp, temp, 2.0f);
+				}
+
+				box = new Box(temp, PxVec3(0.0254f, 0.0508f, 0.009525f));
+
+				PxRigidDynamic* px_actor = (PxRigidDynamic*)box->Get();
+				px_actor->setGlobalPose(PxTransform(px_actor->getGlobalPose().p, startLocation.q));
+				box->Material(dominoMat);
+				box->Color(PxVec3(1.f, 1.f, 1.f));
+				Add(box);
+			}
+
+			PxRigidDynamic* px_actor = (PxRigidDynamic*)box->Get();
+			PxVec3 position = px_actor->getGlobalPose().p;
+
+			position.x = position.x + (startLocation.q.getBasisVector2().x * 0.0616f);
+			position.y = position.y + (startLocation.q.getBasisVector1().y * 0.0116f);
+			position.z = position.z + (startLocation.q.getBasisVector2().z * 0.0616f);
+
+			startLocation.p = position;
+
+			return startLocation;
+		}
+
+		PxTransform spawnStairs(PxTransform startLocation, PxI16 noDominoes, bool forDown) {
+
+			for (int i = 0; i < noDominoes; i++) { // For loop to place x dominoes
+
+				PxTransform temp = PxTransform(PxVec3(
+					startLocation.p.x + (startLocation.q.getBasisVector2().x * 0.0616f * i),
+					startLocation.p.y - (startLocation.q.getBasisVector1().y * 0.0116f * i),
+					startLocation.p.z + (startLocation.q.getBasisVector2().z * 0.0616f * i)
+				), startLocation.q);
+
+				if ((temp.p.y) > 0.01f) {
+					spawnFloor(temp, temp, 2.0f);
+				}
+
+				box = new Box(temp, PxVec3(0.0254f, 0.0508f, 0.009525f));
+
+				PxRigidDynamic* px_actor = (PxRigidDynamic*)box->Get();
+				px_actor->setGlobalPose(PxTransform(px_actor->getGlobalPose().p, startLocation.q));
+				box->Material(dominoMat);
+				box->Color(PxVec3(1.f, 1.f, 1.f));
+				Add(box);
+			}
+
+			PxRigidDynamic* px_actor = (PxRigidDynamic*)box->Get();
+			PxVec3 position = px_actor->getGlobalPose().p;
+
+			position.x = position.x + (startLocation.q.getBasisVector2().x * 0.0616f);
+			position.y = position.y - (startLocation.q.getBasisVector1().y * 0.0116f);
+			position.z = position.z + (startLocation.q.getBasisVector2().z * 0.0616f);
+
+			startLocation.p = position;
+
+			return startLocation;
+		}
+
 
 		PxTransform spawnCorner(PxTransform startLocation, PxI16 noDominoes, float angleRad) // Spawns a corner with parameterized number of dominoes, angle and direction
 		{
@@ -320,17 +430,17 @@ namespace PhysicsEngine
 			tempRot = startLocation.q * PxQuat(rotateRad / noDominoes, startLocation.q.getBasisVector1());
 
 			temp.p = PxVec3(
-				temp.p.x - (tempRot.getBasisVector2().x * ((0.0516f))),
+				temp.p.x - (tempRot.getBasisVector2().x * ((0.0616f))),
 				temp.p.y,
-				temp.p.z - (tempRot.getBasisVector2().z * ((0.0516f))));
+				temp.p.z - (tempRot.getBasisVector2().z * ((0.0616f))));
 
 			for (int i = 0; i < noDominoes + 1; i++) {
 				tempRot = startLocation.q * PxQuat((rotateRad / noDominoes) * i, tempRot.getBasisVector1());
 
 				box = new Box(PxTransform(PxVec3(
-					temp.p.x + (tempRot.getBasisVector2().x * (0.0516f)),
+					temp.p.x + (tempRot.getBasisVector2().x * (0.0616f)),
 					temp.p.y,
-					temp.p.z + (tempRot.getBasisVector2().z * (0.0516f))
+					temp.p.z + (tempRot.getBasisVector2().z * (0.0616f))
 				)), PxVec3(0.0254f, 0.0508f, 0.009525));
 
 				px_actor = (PxRigidDynamic*)box->Get();
@@ -351,15 +461,15 @@ namespace PhysicsEngine
 				else if (temp.p.z < minZ) {
 					minZ = temp.p.z;
 				}
-
+				box->Material(dominoMat);
 				box->Color(PxVec3(1.f, 1.f, 1.f));
 				Add(box);
 			}
 
 			px_actor = (PxRigidDynamic*)box->Get();
 			PxVec3 position = px_actor->getGlobalPose().p;
-			position.x = position.x + (tempRot.getBasisVector2().x * ((0.0516f)));
-			position.z = position.z + (tempRot.getBasisVector2().z * ((0.0516f)));
+			position.x = position.x + (tempRot.getBasisVector2().x * ((0.0616f)));
+			position.z = position.z + (tempRot.getBasisVector2().z * ((0.0616f)));
 
 			tempRot = startLocation.q * PxQuat(rotateRad, startLocation.q.getBasisVector1());
 
@@ -371,22 +481,23 @@ namespace PhysicsEngine
 				cout << maxX << endl;
 				cout << std::abs(minX - maxX) << endl;
 				spawnFloor(init, PxTransform(PxVec3(
-					startLocation.p.x - (tempRot.getBasisVector2().x * ((0.0516f))),
+					startLocation.p.x - (tempRot.getBasisVector2().x * ((0.0616f))),
 					startLocation.p.y,
-				startLocation.p.z - (tempRot.getBasisVector2().z * ((0.0516f))))), 1.7f, std::abs(minX - maxX), std::abs(minZ - maxZ)); }
+				startLocation.p.z - (tempRot.getBasisVector2().z * ((0.0616f))))), 1.7f, std::abs(minX - maxX), std::abs(minZ - maxZ)); }
 
 
 			return PxTransform(startLocation);
 		}
 
 		void spawnFloor(PxTransform start, PxTransform end, float shrinkConst) {
+
 			float diffX = std::abs(start.p.x - end.p.x);
 			float diffZ = std::abs(start.p.z - end.p.z);
 			float offsetX = 0.0f;
 			float offsetZ = 0.0f;
 
-			if (diffX < 0.1f) { offsetX = .1f; }
-			if (diffZ < 0.1f) { offsetZ = .1f; }
+			if (diffX < 0.1f) { offsetX = .03f; }
+			if (diffZ < 0.1f) { offsetZ = .03f; }
 
 			float constX;
 			if (start.p.x > end.p.x) {
@@ -409,21 +520,19 @@ namespace PhysicsEngine
 			}
 
 
-			box = new Box(PxTransform(PxVec3(constX, start.p.y - 0.15f, constZ)), PxVec3(offsetX + diffX / shrinkConst, 0.1f, offsetZ + diffZ / shrinkConst));
+			staticBox = new SBox(PxTransform(PxVec3(constX, start.p.y - 0.15f, constZ)), PxVec3(offsetX + diffX / shrinkConst, 0.1f, offsetZ + diffZ / shrinkConst));
 
-			PxRigidDynamic* px_actor = (PxRigidDynamic*)box->Get();
-			px_actor->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
-			box->Color(PxVec3(0.f, 0.f, 0.f));
+			staticBox->Color(PxVec3(0.f, 0.f, 0.f));
 
-			Add(box);
+			Add(staticBox);
 		}
 
 		void spawnFloor(PxTransform start, PxTransform end, float shrinkConst, float diffX, float diffZ) {
 			float offsetX = 0.0f;
 			float offsetZ = 0.0f;
 
-			if (diffX < 0.1f) { offsetX = .1f; }
-			if (diffZ < 0.1f) { offsetZ = .1f; }
+			if (diffX < 0.1f) { offsetX = .03f; }
+			if (diffZ < 0.1f) { offsetZ = .03f; }
 
 			float constX;
 			if (start.p.x > end.p.x) {
@@ -446,13 +555,11 @@ namespace PhysicsEngine
 			}
 
 
-			box = new Box(PxTransform(PxVec3(constX, start.p.y - 0.15f, constZ)), PxVec3(offsetX + diffX / shrinkConst, 0.1f, offsetZ + diffZ / shrinkConst));
+			staticBox = new SBox(PxTransform(PxVec3(constX, start.p.y - 0.15f, constZ)), PxVec3(offsetX + diffX / shrinkConst, 0.1f, offsetZ + diffZ / shrinkConst));
 
-			PxRigidDynamic* px_actor = (PxRigidDynamic*)box->Get();
-			px_actor->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
-			box->Color(PxVec3(0.f, 0.f, 0.f));
+			staticBox->Color(PxVec3(0.f, 0.f, 0.f));
 
-			Add(box);
+			Add(staticBox);
 		}
 	};
 }

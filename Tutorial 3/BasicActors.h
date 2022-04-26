@@ -33,6 +33,18 @@ namespace PhysicsEngine
 		}
 	};
 
+	class Hammer : public DynamicActor
+	{
+	public:
+		Hammer(const PxTransform& pose = PxTransform(PxIdentity), PxReal scale = 1.f, PxReal density=1.f)
+			: DynamicActor(pose)
+		{
+			CreateShape(PxBoxGeometry(PxVec3(0.2f, 0.2f, 0.4f) * scale), density);
+			CreateShape(PxBoxGeometry(PxVec3(0.06f, .6f, 0.06f) * scale), density);
+			GetShape(1)->setLocalPose(PxTransform(PxVec3(0.f, .6f, 0.f)));
+		}
+	};
+
 	///Box class
 	class Box : public DynamicActor
 	{
@@ -187,6 +199,9 @@ namespace PhysicsEngine
 
 			joint = PxRevoluteJointCreate(*GetPhysics(), px_actor0, localFrame0, (PxRigidActor*)actor1->Get(), localFrame1);
 			joint->setConstraintFlag(PxConstraintFlag::eVISUALIZATION,true);
+			((PxRevoluteJoint*)joint)->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_ENABLED, false);
+			((PxRevoluteJoint*)joint)->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_FREESPIN, true);
+			((PxRevoluteJoint*)joint)->setConstraintFlag(PxConstraintFlag::eDRIVE_LIMITS_ARE_FORCES, 6);
 		}
 
 		void DriveVelocity(PxReal value)
@@ -205,7 +220,7 @@ namespace PhysicsEngine
 					actor_1->wakeUp();
 			}
 			((PxRevoluteJoint*)joint)->setDriveVelocity(value);
-			((PxRevoluteJoint*)joint)->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_ENABLED, true);
+			
 		}
 
 		PxReal DriveVelocity()
