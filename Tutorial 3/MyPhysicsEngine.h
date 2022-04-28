@@ -185,6 +185,7 @@ namespace PhysicsEngine
 	class MyScene : public Scene
 	{
 		Plane* plane;
+		Sphere* bullet;
 		Hammer* hammer;
 		Box* box, box2;
 		SBox* staticBox;
@@ -225,6 +226,9 @@ namespace PhysicsEngine
 			box = new Box(PxTransform(PxVec3(.0f,.5f,.0f)));
 			box->Color(color_palette[0]);
 
+			box->Name("Box1");
+			Add(box);
+
 			hammer = new Hammer(PxTransform(PxVec3(5.f, 1.5f, 1.5f)), 1.f, 2.f);
 			hammer->Color(PxVec3(0.f, 0.f, 0.f));
 			PxRigidDynamic* px_actor = (PxRigidDynamic*)hammer->Get();
@@ -247,8 +251,6 @@ namespace PhysicsEngine
 			//don't forget to set your flags for the matching actor as well, e.g.:
 			// box2->SetupFiltering(FilterGroup::ACTOR1, FilterGroup::ACTOR0);
 
-			box->Name("Box1");
-			Add(box);
 
 			/*
 			//joint two boxes together
@@ -263,47 +265,28 @@ namespace PhysicsEngine
 
 			startLoc = spawnStairs(startLoc, 10);
 			startLoc = spawnLine(startLoc, 15);
-			startLoc = spawnCorner(startLoc, 25, PxPiDivTwo);
-			startLoc = spawnLine(startLoc, 15);
-			startLoc = spawnCorner(startLoc, 25, -PxPiDivTwo);
-			startLoc = spawnStairs(startLoc, 10);
-			startLoc = spawnCorner(startLoc, 15, PxPiDivTwo);
-			startLoc = spawnStairs(startLoc, 12);
-			startLoc = spawnLine(startLoc, 2);
-			startLoc.p.y = 0.15f;
-			startLoc = spawnLine(startLoc, 15);
+			startLoc = spawnStairs(startLoc, 10, true);
+			startLoc = spawnCorner(startLoc, 25, PxPi);
+			startLoc = spawnCorner(startLoc, 25, -PxPi);
+			startLoc = spawnCorner(startLoc, 25, PxPi);
+			startLoc = spawnCorner(startLoc, 25, -PxPi);
+			startLoc = spawnCorner(startLoc, 25, PxPi);
+			startLoc = spawnCorner(startLoc, 25, -PxPi);
+			startLoc = spawnLine(startLoc, 25);
+			startLoc = spawnCorner(startLoc, 25, PxPi);
+			startLoc = spawnCorner(startLoc, 25, -PxPi);
+			startLoc = spawnCorner(startLoc, 25, PxPi);
+			startLoc = spawnCorner(startLoc, 25, -PxPi);
+			startLoc = spawnCorner(startLoc, 25, PxPi);
+			startLoc = spawnCorner(startLoc, 25, -PxPi);
+			startLoc = spawnLine(startLoc, 25);
 
-			startLoc = spawnLine(startLoc, 15);
-			startLoc = spawnCorner(startLoc, 25, PxPiDivTwo);
-			startLoc = spawnLine(startLoc, 15);
-			startLoc = spawnCorner(startLoc, 25, -PxPiDivTwo);
-			startLoc = spawnStairs(startLoc, 10);
-			startLoc = spawnCorner(startLoc, 15, PxPiDivTwo);
-			startLoc = spawnStairs(startLoc, 12);
-			startLoc = spawnLine(startLoc, 2);
-			startLoc.p.y = 0.15f;
-			startLoc = spawnLine(startLoc, 15);
+
 		}
 
 		//Custom udpate function
 		virtual void CustomUpdate() 
 		{
-		}
-
-		/// An example use of key release handling
-		void HammerRelease()
-		{
-			PxRevoluteJoint* temp = (PxRevoluteJoint*)hamJoint->Get();
-			temp->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_ENABLED, false);
-			cerr << "I am realeased!" << endl;
-		}
-
-		/// An example use of key presse handling
-		void HammerPress()
-		{
-			PxRevoluteJoint* temp = (PxRevoluteJoint*)hamJoint->Get();
-			temp->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_ENABLED, true);
-			cerr << "I am pressed!" << endl;
 		}
 
 		PxTransform spawnLine(PxTransform startLocation, PxI16 noDominoes) // Spawns a straight line in the forward vector of the transform passed to the function
@@ -560,6 +543,31 @@ namespace PhysicsEngine
 			staticBox->Color(PxVec3(0.f, 0.f, 0.f));
 
 			Add(staticBox);
+		}
+
+		/// An example use of key release handling
+		void HammerRelease()
+		{
+			PxRevoluteJoint* temp = (PxRevoluteJoint*)hamJoint->Get();
+			temp->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_ENABLED, false);
+			cerr << "I am realeased!" << endl;
+		}
+
+		/// An example use of key presse handling
+		void HammerPress()
+		{
+			PxRevoluteJoint* temp = (PxRevoluteJoint*)hamJoint->Get();
+			temp->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_ENABLED, true);
+			cerr << "I am pressed!" << endl;
+		}
+
+		void FireBox(PxTransform camera) {
+			bullet = new Sphere(camera, 0.4f);
+			bullet->Color(color_palette[0]);
+			PxRigidDynamic* temp = (PxRigidDynamic*)bullet->Get();
+			Add(bullet);
+			bullet->Material(CreateMaterial(0.2f, 0.2f, .6f));
+			temp->addForce(camera.q.getBasisVector2() * -10.f, PxForceMode::eIMPULSE);
 		}
 	};
 }
