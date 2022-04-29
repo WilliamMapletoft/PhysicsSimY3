@@ -184,6 +184,7 @@ namespace PhysicsEngine
 	///Custom scene class
 	class MyScene : public Scene
 	{
+		Cloth* cloth;
 		Plane* plane;
 		Sphere* bullet;
 		Hammer* hammer;
@@ -268,20 +269,12 @@ namespace PhysicsEngine
 			startLoc = spawnStairs(startLoc, 10, true);
 			startLoc = spawnCorner(startLoc, 25, PxPi);
 			startLoc = spawnCorner(startLoc, 25, -PxPi);
-			startLoc = spawnCorner(startLoc, 25, PxPi);
-			startLoc = spawnCorner(startLoc, 25, -PxPi);
-			startLoc = spawnCorner(startLoc, 25, PxPi);
-			startLoc = spawnCorner(startLoc, 25, -PxPi);
-			startLoc = spawnLine(startLoc, 25);
-			startLoc = spawnCorner(startLoc, 25, PxPi);
-			startLoc = spawnCorner(startLoc, 25, -PxPi);
-			startLoc = spawnCorner(startLoc, 25, PxPi);
-			startLoc = spawnCorner(startLoc, 25, -PxPi);
-			startLoc = spawnCorner(startLoc, 25, PxPi);
-			startLoc = spawnCorner(startLoc, 25, -PxPi);
-			startLoc = spawnLine(startLoc, 25);
 
+			cloth = new Cloth(PxTransform(PxVec3(2.5f, 4.f, 1.8f)), PxVec2(4.f, 4.f), 100, 100);
+			cloth->Color(PxVec3(1.0f, 0.f, 0.f));
+			Add(cloth);
 
+			
 		}
 
 		//Custom udpate function
@@ -561,13 +554,13 @@ namespace PhysicsEngine
 			cerr << "I am pressed!" << endl;
 		}
 
-		void FireBox(PxTransform camera) {
+		void Fire(PxTransform camera) {
 			bullet = new Sphere(camera, 0.4f);
 			bullet->Color(color_palette[0]);
 			PxRigidDynamic* temp = (PxRigidDynamic*)bullet->Get();
 			Add(bullet);
 			bullet->Material(CreateMaterial(0.2f, 0.2f, .6f));
-			temp->addForce(camera.q.getBasisVector2() * -10.f, PxForceMode::eIMPULSE);
+			temp->addForce(camera.q.getBasisVector2() * -5.f, PxForceMode::eIMPULSE);
 		}
 	};
 }

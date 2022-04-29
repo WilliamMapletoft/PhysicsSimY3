@@ -179,7 +179,7 @@ namespace VisualDebugger
 			break;
 
 		case ' ':
-			scene->FireBox(camera->getTransform());
+			scene->Fire(camera->getTransform());
 			break;
 		default:
 			break;
@@ -194,11 +194,6 @@ namespace VisualDebugger
 		case 'H':
 			scene->HammerRelease();
 			break;
-
-		case ' ':
-
-			break;
-
 		default:
 			break;
 		}
