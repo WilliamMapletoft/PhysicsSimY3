@@ -1,0 +1,8 @@
+﻿  Tutorial 3.cpp
+C:\Users\Computing\Downloads\PhysicsSimY3-main\PhysicsSimY3-main\Tutorial 3\BasicActors.h(204,1): warning C4305: 'argument': truncation from 'int' to 'bool'
+C:\Users\Computing\Downloads\PhysicsSimY3-main\PhysicsSimY3-main\Tutorial 3\MyPhysicsEngine.h(420,1): warning C4305: 'argument': truncation from 'double' to 'float'
+  VisualDebugger.cpp
+C:\Users\Computing\Downloads\PhysicsSimY3-main\PhysicsSimY3-main\Tutorial 3\BasicActors.h(204,1): warning C4305: 'argument': truncation from 'int' to 'bool'
+C:\Users\Computing\Downloads\PhysicsSimY3-main\PhysicsSimY3-main\Tutorial 3\MyPhysicsEngine.h(420,1): warning C4305: 'argument': truncation from 'double' to 'float'
+  Generating Code...
+  Tutorial 3.vcxproj -> C:\Users\Computing\Downloads\PhysicsSimY3-main\PhysicsSimY3-main\x64\Debug\Tutorial 3.exe

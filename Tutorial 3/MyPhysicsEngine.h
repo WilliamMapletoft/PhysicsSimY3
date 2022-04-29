@@ -264,15 +264,15 @@ namespace PhysicsEngine
 
 			//PxTransform temp = startLoc;
 
+			startLoc = spawnLine(startLoc, 10, 1.96f);
 			startLoc = spawnStairs(startLoc, 10);
-			startLoc = spawnLine(startLoc, 15);
+			startLoc = spawnCorner(startLoc, 25, PxPiDivTwo);
+			startLoc = spawnLine(startLoc, 100, 1.96f);
 			startLoc = spawnStairs(startLoc, 10, true);
-			startLoc = spawnCorner(startLoc, 25, PxPi);
-			startLoc = spawnCorner(startLoc, 25, -PxPi);
 
 			cloth = new Cloth(PxTransform(PxVec3(2.5f, 4.f, 1.8f)), PxVec2(4.f, 4.f), 100, 100);
 			cloth->Color(PxVec3(1.0f, 0.f, 0.f));
-			Add(cloth);
+			//Add(cloth);
 
 			
 		}
@@ -282,7 +282,7 @@ namespace PhysicsEngine
 		{
 		}
 
-		PxTransform spawnLine(PxTransform startLocation, PxI16 noDominoes) // Spawns a straight line in the forward vector of the transform passed to the function
+		PxTransform spawnLine(PxTransform startLocation, PxI16 noDominoes, float shrink) // Spawns a straight line in the forward vector of the transform passed to the function
 		{
 			PxTransform temp = PxTransform(PxVec3(
 				startLocation.p.x - (startLocation.q.getBasisVector2().x * 0.0616f),
@@ -309,7 +309,7 @@ namespace PhysicsEngine
 			position.x = position.x + (startLocation.q.getBasisVector2().x * 0.0616f);
 			position.z = position.z + (startLocation.q.getBasisVector2().z * 0.0616f);
 
-			if (temp.p.y > 0.1f) { spawnFloor(temp, px_actor->getGlobalPose(), 1.7f); }
+			if (temp.p.y > 0.1f) { spawnFloor(temp, px_actor->getGlobalPose(), shrink); }
 
 			startLocation.p = position;
 
