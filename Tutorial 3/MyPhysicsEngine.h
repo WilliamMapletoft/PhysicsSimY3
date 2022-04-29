@@ -115,6 +115,11 @@ namespace PhysicsEngine
 						cerr << "onTrigger::eNOTIFY_TOUCH_LOST" << endl;
 						trigger = false;
 					}
+					string id = pairs[i].otherActor->getName();
+					cout << id << endl;
+					if (id == "LastDomino") {
+						cout << "Final domino fallen" << endl;
+					}
 				}
 			}
 		}
@@ -193,6 +198,8 @@ namespace PhysicsEngine
 		MySimulationEventCallback* my_callback;
 		PxMaterial* dominoMat;
 		RevoluteJoint* hamJoint;
+		DistanceJoint* distJoint;
+		bool isDone;
 		
 	public:
 		//specify your custom filter shader here
@@ -264,16 +271,19 @@ namespace PhysicsEngine
 
 			//PxTransform temp = startLoc;
 
-			startLoc = spawnLine(startLoc, 10, 1.96f);
-			startLoc = spawnStairs(startLoc, 10);
+
+			cloth = new Cloth(PxTransform(PxVec3(3.f, 10.f, 2.f)), PxVec2(4.f, 4.f), 50, 50, true);
+			Add(cloth);
+
+			startLoc = spawnLine(startLoc, 50, 1.98f);
 			startLoc = spawnCorner(startLoc, 25, PxPiDivTwo);
-			startLoc = spawnLine(startLoc, 100, 1.96f);
-			startLoc = spawnStairs(startLoc, 10, true);
 
-			cloth = new Cloth(PxTransform(PxVec3(2.5f, 4.f, 1.8f)), PxVec2(4.f, 4.f), 100, 100);
-			cloth->Color(PxVec3(1.0f, 0.f, 0.f));
-			//Add(cloth);
-
+			box->Name("LastDomino");
+			
+			staticBox = new SBox(startLoc, PxVec3(0.0254f, 0.0508f, 0.009525f));
+			staticBox->SetTrigger(true, 0);
+			staticBox->Name("TriggerBox");
+			Add(staticBox);
 			
 		}
 
@@ -560,7 +570,13 @@ namespace PhysicsEngine
 			PxRigidDynamic* temp = (PxRigidDynamic*)bullet->Get();
 			Add(bullet);
 			bullet->Material(CreateMaterial(0.2f, 0.2f, .6f));
+			bullet->Name("Bullet");
 			temp->addForce(camera.q.getBasisVector2() * -5.f, PxForceMode::eIMPULSE);
 		}
+
+		bool dominoesDone() {
+			return isDone;
+		}
+
 	};
 }

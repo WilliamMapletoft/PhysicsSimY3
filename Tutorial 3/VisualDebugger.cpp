@@ -19,7 +19,8 @@ namespace VisualDebugger
 	{
 		EMPTY = 0,
 		HELP = 1,
-		PAUSE = 2
+		PAUSE = 2,
+		SDONE = 3
 	};
 
 	//function declarations
@@ -109,11 +110,19 @@ namespace VisualDebugger
 		hud.AddLine(HELP, "");
 		hud.AddLine(HELP, " Force (applied to the selected actor)");
 		hud.AddLine(HELP, "    I,K,J,L,U,M - forward,backward,left,right,up,down");
+		hud.AddLine(HELP, "");
+		hud.AddLine(HELP, " Spin Hammer (Start domino run)");
+		hud.AddLine(HELP, "    H");
+		hud.AddLine(HELP, "");
+		hud.AddLine(HELP, " Fire Sphere (fired forwards from camera)");
+		hud.AddLine(HELP, "    SPACE");
 		//add a pause screen
 		hud.AddLine(PAUSE, "");
 		hud.AddLine(PAUSE, "");
 		hud.AddLine(PAUSE, "");
 		hud.AddLine(PAUSE, "   Simulation paused. Press F10 to continue.");
+		//add an end screen
+		hud.AddLine(SDONE, "IT IS OVER");
 		//set font size for all screens
 		hud.FontSize(0.018f);
 		//set font color for all screens
@@ -165,6 +174,9 @@ namespace VisualDebugger
 		Renderer::Finish();
 
 		//perform a single simulation step
+		if (scene->dominoesDone()) {
+			hud.ActiveScreen(SDONE);
+		}
 		scene->Update(delta_time);
 	}
 

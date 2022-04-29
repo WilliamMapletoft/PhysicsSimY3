@@ -294,7 +294,8 @@ namespace PhysicsEngine
 			//create cloth
 			actor = (PxActor*)GetPhysics()->createCloth(pose, *fabric, vertices, PxClothFlags());
 			//collisions with the scene objects
-			((PxCloth*)actor)->setClothFlag(PxClothFlag::eSCENE_COLLISION, true);
+			((PxCloth*)actor)->setClothFlag(PxClothFlag::eSCENE_COLLISION, 2);
+			((PxCloth*)actor)->setClothFlag(PxClothFlag::eSWEPT_CONTACT, true);
 
 			colors.push_back(default_color);
 			actor->userData = new UserData(&colors.back(), &mesh_desc);
