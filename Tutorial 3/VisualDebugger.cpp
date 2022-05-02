@@ -122,6 +122,8 @@ namespace VisualDebugger
 		hud.AddLine(PAUSE, "");
 		hud.AddLine(PAUSE, "   Simulation paused. Press F10 to continue.");
 		//add an end screen
+		hud.AddLine(SDONE, "");
+		hud.AddLine(SDONE, "");
 		hud.AddLine(SDONE, "IT IS OVER");
 		//set font size for all screens
 		hud.FontSize(0.018f);
@@ -166,17 +168,21 @@ namespace VisualDebugger
 		}
 		else
 			hud.ActiveScreen(EMPTY);
-
+		//perform a single simulation step
+		if (scene->dominoesDone()) {
+			hud.ActiveScreen(SDONE);
+			//set font size for all screens
+			hud.FontSize(0.168f);
+			//set font color for all screens
+			hud.Color(PxVec3(1.f, 0.f, 0.f));
+		}
 		//render HUD
 		hud.Render();
 
 		//finish rendering
 		Renderer::Finish();
 
-		//perform a single simulation step
-		if (scene->dominoesDone()) {
-			hud.ActiveScreen(SDONE);
-		}
+		
 		scene->Update(delta_time);
 	}
 

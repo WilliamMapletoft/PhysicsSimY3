@@ -33,15 +33,15 @@ namespace PhysicsEngine
 		}
 	};
 
-	class Hammer : public DynamicActor
+	class Hammer : public DynamicActor //Basic compound object, made of multiple cuboids.
 	{
 	public:
-		Hammer(const PxTransform& pose = PxTransform(PxIdentity), PxReal scale = 1.f, PxReal density=1.f)
+		Hammer(const PxTransform& pose = PxTransform(PxIdentity), PxReal scale = 1.f, PxReal density=1.f) //The hammer can be parameterised for its starting position, scale and density
 			: DynamicActor(pose)
 		{
-			CreateShape(PxBoxGeometry(PxVec3(0.2f, 0.2f, 0.4f) * scale), density);
+			CreateShape(PxBoxGeometry(PxVec3(0.2f, 0.2f, 0.4f) * scale), density); //The placement of the boxes will always be the same for any hammers made, as such this isnt paramaterised
 			CreateShape(PxBoxGeometry(PxVec3(0.06f, .6f, 0.06f) * scale), density);
-			GetShape(1)->setLocalPose(PxTransform(PxVec3(0.f, .6f, 0.f)));
+			GetShape(1)->setLocalPose(PxTransform(PxVec3(0.f, .6f, 0.f))); //Offsetting the position of the second shape, that comprises the hammers handle
 		}
 	};
 

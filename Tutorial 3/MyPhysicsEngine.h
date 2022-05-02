@@ -91,41 +91,33 @@ namespace PhysicsEngine
 	public:
 		//an example variable that will be checked in the main simulation loop
 		bool trigger;
+		Scene* scene;
 
-		MySimulationEventCallback() : trigger(false) {}
+		MySimulationEventCallback(Scene* sceneI) : trigger(false) {
+			scene = sceneI;
+		}
 
 		///Method called when the contact with the trigger object is detected.
-		virtual void onTrigger(PxTriggerPair* pairs, PxU32 count) 
+		virtual void onTrigger(PxTriggerPair* pairs, PxU32 count)
 		{
 			//you can read the trigger information here
 			for (PxU32 i = 0; i < count; i++)
 			{
 				//filter out contact with the planes
-				if (pairs[i].otherShape->getGeometryType() != PxGeometryType::ePLANE)
+				if (pairs[i].otherShape->getGeometryType() != PxGeometryType::ePLANE && pairs[i].otherShape->getGeometryType() != PxGeometryType::eSPHERE) //Filter out planes and spheres from triggering
 				{
-					//check if eNOTIFY_TOUCH_FOUND trigger
-					if (pairs[i].status & PxPairFlag::eNOTIFY_TOUCH_FOUND)
-					{
-						cerr << "onTrigger::eNOTIFY_TOUCH_FOUND" << endl;
-						trigger = true;
-					}
-					//check if eNOTIFY_TOUCH_LOST trigger
-					if (pairs[i].status & PxPairFlag::eNOTIFY_TOUCH_LOST)
-					{
-						cerr << "onTrigger::eNOTIFY_TOUCH_LOST" << endl;
-						trigger = false;
-					}
 					string id = pairs[i].otherActor->getName();
 					cout << id << endl;
-					if (id == "LastDomino") {
+					if (id == "LastDomino") { // Checking that the object colliding with our trigger has the name "LastDomino"
 						cout << "Final domino fallen" << endl;
+						scene->CustomUpdate(true); //Pass a bool to the scene's update which will be checked by the visualdebugger.cpp to set the UI to the finish screen
 					}
 				}
 			}
 		}
 
 		///Method called when the contact by the filter shader is detected.
-		virtual void onContact(const PxContactPairHeader &pairHeader, const PxContactPair *pairs, PxU32 nbPairs) 
+		virtual void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nbPairs)
 		{
 			cerr << "Contact found between " << pairHeader.actors[0]->getName() << " " << pairHeader.actors[1]->getName() << endl;
 
@@ -145,11 +137,11 @@ namespace PhysicsEngine
 			}
 		}
 
-		virtual void onConstraintBreak(PxConstraintInfo *constraints, PxU32 count) {}
-		virtual void onWake(PxActor **actors, PxU32 count) {}
-		virtual void onSleep(PxActor **actors, PxU32 count) {}
+		virtual void onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) {}
+		virtual void onWake(PxActor** actors, PxU32 count) {}
+		virtual void onSleep(PxActor** actors, PxU32 count) {}
 #if PX_PHYSICS_VERSION >= 0x304000
-		virtual void onAdvance(const PxRigidBody *const *bodyBuffer, const PxTransform *poseBuffer, const PxU32 count) {}
+		virtual void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) {}
 #endif
 	};
 
@@ -189,9 +181,11 @@ namespace PhysicsEngine
 	///Custom scene class
 	class MyScene : public Scene
 	{
+		vector<Actor*> bullets, bullets2;
+		Pyramid* pyramid;
 		Cloth* cloth;
 		Plane* plane;
-		Sphere* bullet;
+		Sphere* marble;
 		Hammer* hammer;
 		Box* box, box2;
 		SBox* staticBox;
@@ -199,7 +193,7 @@ namespace PhysicsEngine
 		PxMaterial* dominoMat;
 		RevoluteJoint* hamJoint;
 		DistanceJoint* distJoint;
-		bool isDone;
+		bool isDone, currentList;
 		
 	public:
 		//specify your custom filter shader here
@@ -224,30 +218,24 @@ namespace PhysicsEngine
 
 			dominoMat = CreateMaterial(0.2f, 0.2f, 0.6f);
 
-			my_callback = new MySimulationEventCallback();
+			my_callback = new MySimulationEventCallback(this);
 			px_scene->setSimulationEventCallback(my_callback);
 
 			plane = new Plane();
 			plane->Color(PxVec3(210.f/255.f,210.f/255.f,210.f/255.f));
 			Add(plane);
 
-			box = new Box(PxTransform(PxVec3(.0f,.5f,.0f)));
-			box->Color(color_palette[0]);
-
-			box->Name("Box1");
-			Add(box);
-
-			hammer = new Hammer(PxTransform(PxVec3(5.f, 1.5f, 1.5f)), 1.f, 2.f);
+			hammer = new Hammer(PxTransform(PxVec3(5.f, 1.5f, 1.5f)), 1.f, 2.f); //Creating an object of type "Hammer" as defined in BasicActors.h
 			hammer->Color(PxVec3(0.f, 0.f, 0.f));
 			PxRigidDynamic* px_actor = (PxRigidDynamic*)hammer->Get();
-			px_actor->setAngularDamping(10.0f);
-			px_actor->setSleepThreshold(0.f);
+			px_actor->setAngularDamping(10.0f); //Applying angular damping to ensure that the hammer won't freely swing for too long
+			px_actor->setSleepThreshold(0.f); //Ensure the hammer will not go to sleep automatically, which stops the joint's motor from moving the hammer
 			
 			hamJoint = new RevoluteJoint(NULL,
 				PxTransform(PxVec3(5.f, 1.423f, 1.5f), PxQuat(PxPi * 2, PxVec3(1.f, 0.f, 0.f))),
 				hammer, 
-				PxTransform(PxVec3(0.0f, 1.15f, 0.f)));
-			hamJoint->DriveVelocity(-1.f);
+				PxTransform(PxVec3(0.0f, 1.15f, 0.f))); //Connecting the hammer at local position 0, 1.15, 0 to the world position 5, 1.423, 1.5
+			hamJoint->DriveVelocity(-1.f); //Setting the maximum power of the drive to be used on the user pressing H
 
 			Add(hammer);
 
@@ -272,24 +260,45 @@ namespace PhysicsEngine
 			//PxTransform temp = startLoc;
 
 
-			cloth = new Cloth(PxTransform(PxVec3(3.f, 10.f, 2.f)), PxVec2(4.f, 4.f), 50, 50, true);
-			Add(cloth);
-
 			startLoc = spawnLine(startLoc, 50, 1.98f);
 			startLoc = spawnCorner(startLoc, 25, PxPiDivTwo);
+			startLoc = spawnStairs(startLoc, 50);
+			startLoc = spawnLine(startLoc, 50, 1.98f);
+			startLoc = spawnCorner(startLoc, 25, PxPiDivTwo);
+			startLoc = spawnLine(startLoc, 5, 1.90f);
+			startLoc.p.y = 0.05f;
+			startLoc = spawnCorner(startLoc, 25, PxPiDivTwo);
+			startLoc = spawnStairs(startLoc, 50);
+			startLoc = spawnCorner(startLoc, 25, -PxPiDivTwo);
+			startLoc = spawnStairs(startLoc, 50);
+			startLoc = spawnCorner(startLoc, 25, -PxPiDivTwo);
+			startLoc = spawnStairs(startLoc, 50);
+			startLoc.p.y = 0.05f;
+			startLoc = spawnStairs(startLoc, 50);
+			startLoc = spawnStairs(startLoc, 25, true);
+			startLoc = spawnCorner(startLoc, 25, -PxPiDivTwo);
+			startLoc = spawnLine(startLoc, 5, 1.9f);
+			startLoc.p.y = 0.05f;
+			startLoc = spawnLine(startLoc, 100, 1.98f);
+			box->Name("LastDomino"); //Setting the last domino to be spawned to have the name "LastDomino" which will be filtered for
 
-			box->Name("LastDomino");
-			
-			staticBox = new SBox(startLoc, PxVec3(0.0254f, 0.0508f, 0.009525f));
-			staticBox->SetTrigger(true, 0);
+			staticBox = new SBox(startLoc, PxVec3(0.0254f, 0.0508f, 0.009525f)); //Spawn a static trigger box at the end of the domino run
+			staticBox->SetTrigger(true, 0); //Setting the static box to be a trigger
 			staticBox->Name("TriggerBox");
 			Add(staticBox);
+
+			startLoc.p.y += 4.f;
+			cloth = new Cloth(startLoc, PxVec2(4.f, 4.f), 20, 20, true);
+			Add(cloth);
 			
 		}
 
 		//Custom udpate function
-		virtual void CustomUpdate() 
+		virtual void CustomUpdate(bool amIDone)
 		{
+			if (amIDone == true) {
+				isDone = amIDone;
+			}
 		}
 
 		PxTransform spawnLine(PxTransform startLocation, PxI16 noDominoes, float shrink) // Spawns a straight line in the forward vector of the transform passed to the function
@@ -310,6 +319,7 @@ namespace PhysicsEngine
 				px_actor->setGlobalPose(PxTransform(px_actor->getGlobalPose().p ,startLocation.q));
 				box->Material(dominoMat);
 				box->Color(PxVec3(1.f, 1.f, 1.f));
+				box->Name("Domino");
 				Add(box);
 			}
 
@@ -325,7 +335,7 @@ namespace PhysicsEngine
 
 			return startLocation;
 		}
-
+		// Spawnline -> Start location, number of dominoes (length of line), size of platform below floating dominoes
 		PxTransform spawnStairs(PxTransform startLocation, PxI16 noDominoes) {
 
 			for (int i = 0; i < noDominoes; i++) { // For loop to place x dominoes
@@ -346,6 +356,7 @@ namespace PhysicsEngine
 				px_actor->setGlobalPose(PxTransform(px_actor->getGlobalPose().p, startLocation.q));
 				box->Material(dominoMat);
 				box->Color(PxVec3(1.f, 1.f, 1.f));
+				box->Name("Domino");
 				Add(box);
 			}
 
@@ -360,7 +371,7 @@ namespace PhysicsEngine
 
 			return startLocation;
 		}
-
+		// Spawnstairs -> Start location, number of dominoes (length of line)
 		PxTransform spawnStairs(PxTransform startLocation, PxI16 noDominoes, bool forDown) {
 
 			for (int i = 0; i < noDominoes; i++) { // For loop to place x dominoes
@@ -381,6 +392,7 @@ namespace PhysicsEngine
 				px_actor->setGlobalPose(PxTransform(px_actor->getGlobalPose().p, startLocation.q));
 				box->Material(dominoMat);
 				box->Color(PxVec3(1.f, 1.f, 1.f));
+				box->Name("Domino");
 				Add(box);
 			}
 
@@ -395,8 +407,7 @@ namespace PhysicsEngine
 
 			return startLocation;
 		}
-
-
+		// Spawnstairs (down) -> Start location, number of dominoes (length of line), boolean for overloading downwards stairs
 		PxTransform spawnCorner(PxTransform startLocation, PxI16 noDominoes, float angleRad) // Spawns a corner with parameterized number of dominoes, angle and direction
 		{
 			PxRigidDynamic* px_actor = NULL;
@@ -449,6 +460,7 @@ namespace PhysicsEngine
 				}
 				box->Material(dominoMat);
 				box->Color(PxVec3(1.f, 1.f, 1.f));
+				box->Name("Domino");
 				Add(box);
 			}
 
@@ -469,11 +481,12 @@ namespace PhysicsEngine
 				spawnFloor(init, PxTransform(PxVec3(
 					startLocation.p.x - (tempRot.getBasisVector2().x * ((0.0616f))),
 					startLocation.p.y,
-				startLocation.p.z - (tempRot.getBasisVector2().z * ((0.0616f))))), 1.7f, std::abs(minX - maxX), std::abs(minZ - maxZ)); }
+				startLocation.p.z - (tempRot.getBasisVector2().z * ((0.0616f))))), 1.8f, std::abs(minX - maxX), std::abs(minZ - maxZ)); }
 
 
 			return PxTransform(startLocation);
 		}
+		// Spawncorner -> Start location, number of dominoes, angle of corner (radians)
 
 		void spawnFloor(PxTransform start, PxTransform end, float shrinkConst) {
 
@@ -564,14 +577,38 @@ namespace PhysicsEngine
 			cerr << "I am pressed!" << endl;
 		}
 
-		void Fire(PxTransform camera) {
-			bullet = new Sphere(camera, 0.4f);
-			bullet->Color(color_palette[0]);
-			PxRigidDynamic* temp = (PxRigidDynamic*)bullet->Get();
-			Add(bullet);
-			bullet->Material(CreateMaterial(0.2f, 0.2f, .6f));
-			bullet->Name("Bullet");
-			temp->addForce(camera.q.getBasisVector2() * -5.f, PxForceMode::eIMPULSE);
+		void Fire(PxTransform camera) { // Function to fire 10 marbles from camera
+			if (!bullets.empty() && !bullets2.empty()) { // If statement clearing the list of bullets that is older. This allows for exactly two lists of marbles.
+				if (currentList == true) { //Depending on the value of a boolean currentList, clear the list not in current use
+					for (int i = 0; i < bullets.size(); i++) {
+						bullets[i]->Get()->release(); 
+					}
+					bullets.clear();
+				}
+				else
+				{
+					for (int i = 0; i < bullets2.size(); i++) {
+						bullets2[i]->Get()->release();
+					}
+					bullets2.clear();
+				}
+			}
+
+			for (int i = 0; i < 10; i++) { //For loop spawning all 10 marbles
+				PxTransform marbLoc = camera;
+				marbLoc.p.x += (i * 0.1 * marbLoc.q.getBasisVector2().x); //We use the basis vector to orient the marbles position based on the cameras rotation
+				marbLoc.p.z += (i * 0.1 * marbLoc.q.getBasisVector2().z);
+				marble = new Sphere(marbLoc, 0.013f);
+				marble->Color(color_palette[0]);
+				PxRigidDynamic* temp = (PxRigidDynamic*)marble->Get();
+				Add(marble);
+				if (currentList == true) {	bullets.push_back(marble);} //Use the switch boolean to decide which list to add the marbles to
+				else {bullets2.push_back(marble);}
+				marble->Material(CreateMaterial(0.9f, 0.4f, .658f)); //Applying the material properties of glass to the marbles
+				marble->Name("Bullet");
+				temp->addForce(camera.q.getBasisVector2() * -0.0002f, PxForceMode::eIMPULSE); //Applying a small, but relative to the size of the marbles, significant impulse
+			}
+			currentList = !currentList; //Switch the boolean
 		}
 
 		bool dominoesDone() {
@@ -579,4 +616,6 @@ namespace PhysicsEngine
 		}
 
 	};
+
+	
 }

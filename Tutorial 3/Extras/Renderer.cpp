@@ -253,7 +253,7 @@ namespace VisualDebugger
 			glEnable(GL_DEPTH_TEST);
 			glEnable(GL_COLOR_MATERIAL);
 			glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-			glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 1.f);
+			glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, .1f);
 			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material);
 
 			// Setup lighting

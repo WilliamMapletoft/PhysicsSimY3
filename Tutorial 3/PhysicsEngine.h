@@ -124,7 +124,7 @@ namespace PhysicsEngine
 		void Update(PxReal dt);
 
 		///User defined update step
-		virtual void CustomUpdate() {}
+		virtual void CustomUpdate(bool amIDone) {}
 
 		///Add actors
 		void Add(Actor* actor);
